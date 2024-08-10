@@ -7,11 +7,12 @@ import numpy as np
 import requests
 
 import mysql.connector
-
-import time
-import mysql.connector
 from mysql.connector import Error
+import pandas as pd
+import time
+
 import socket
+import pandas as pd
 #Función para obtener IP_privada
 
 def obtener_ip_privada():
@@ -42,36 +43,69 @@ def obtener_ip_publica():
 
 # Función para insertar datos en MySQL
 def insertar_datos(ip_privada, ip_publica, nombre_usuario):
+    try:
+        conexion = mysql.connector.connect(
 
-    conexion = mysql.connector.connect(
+            host='195.179.238.58',  # Cambia por la dirección de tu servidor MySQL
 
-        host='195.179.238.58',  # Cambia por la dirección de tu servidor MySQL
+            database='u927419088_testing_sql',  # Cambia por el nombre de tu base de datos
 
-        database='u927419088_testing_sql',  # Cambia por el nombre de tu base de datos
+            user='u927419088_admin',  # Cambia por tu usuario de MySQL
 
-        user='u927419088_admin',  # Cambia por tu usuario de MySQL
+            password='#Admin12345#'  # Cambia por tu contraseña de MySQL
 
-        password='#Admin12345#'  # Cambia por tu contraseña de MySQL
+        )
 
-    )
-
-
-    cursor = conexion.cursor()
-
-
-    query = "INSERT INTO datos_usuario (ip_privada, ip_publica, nombre_usuario) VALUES (%s, %s,%s)"
-
-    valores = (ip_privada, ip_publica, nombre_usuario)
+        cursor = conexion.cursor()
 
 
-    cursor.execute(query, valores)
+        query = "INSERT INTO datos_usuario (ip_privada, ip_publica, nombre_usuario) VALUES (%s, %s,%s)"
 
-    conexion.commit()
-
-    cursor.close()
+        valores = (ip_privada, ip_publica, nombre_usuario)
 
 
+        cursor.execute(query, valores)
 
+        conexion.commit()
+
+        cursor.close()
+        conexion.close()
+    except Error as e:
+        print(f'Error al conectar a MySQL: {e}')
+
+# Función para crear conexión a la base de datos MySQL
+def create_connection():
+    try:
+        connection = mysql.connector.connect(
+            host='195.179.238.58',
+            user='u927419088_admin',
+            password='#Admin12345#',
+            database='u927419088_testing_sql'
+        )
+        if connection.is_connected():
+            print('Conexión exitosa a la base de datos MySQL')
+            return connection
+    except Error as e:
+        print(f'Error al conectar a MySQL: {e}')
+        return None
+
+# Función para consultar datos y devolver un DataFrame
+def fetch_data(connection):
+    try:
+        query = "SELECT * FROM datos_usuario"
+        df = pd.read_sql(query, connection)
+        return df
+    except Error as e:
+        print(f'Error al ejecutar la consulta: {e}')
+        return None
+
+# Función para exportar DataFrame a CSV
+def export_to_csv(df, filename):
+    try:
+        df.to_csv(filename, index=False)
+        print(f'Datos exportados a {filename}')
+    except Exception as e:
+        print(f'Error al exportar a CSV: {e}')
 
 # Inicializar Mediapipe FaceMesh
 
@@ -97,7 +131,7 @@ def calcular_distancia(punto1, punto2):
 
 ip_publica = obtener_ip_publica()
 
-# Obtiene la IP pública
+# Obtiene la IP privada
 
 ip_privada = obtener_ip_privada()
 
@@ -211,3 +245,11 @@ while cap.isOpened():
 cap.release()
 
 cv2.destroyAllWindows()
+
+# Exportar datos a CSV
+connection = create_connection()
+if connection:
+    df = fetch_data(connection)
+    if df is not None:
+        export_to_csv(df, 'datos_usuario.csv')
+    connection.close()
